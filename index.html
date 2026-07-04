@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CarePath — Public Hospital Patient Management System</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- SMS MODAL -->
+<div class="modal-overlay" id="sms-modal">
+  <div class="modal">
+    <div class="modal-title"><i class="fa-solid fa-mobile-screen" style="color:var(--teal)"></i> SMS Notification Preview</div>
+    <div class="modal-sub">This is what the patient receives on their phone.</div>
+    <div class="sms-phone">
+      <div class="sms-bubble">
+        <div class="sms-sender">CarePath — PHPMS</div>
+        <div class="sms-text" id="sms-text">Your appointment has been confirmed.</div>
+        <div class="sms-time" id="sms-time">Just now</div>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeModal()"><i class="fa-solid fa-check"></i> Got it</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION DROPDOWN -->
+<div class="notif-dropdown" id="notif-dropdown">
+  <div class="nd-header">
+    <div class="nd-title">Notifications</div>
+    <span class="nd-clear" onclick="clearNotifs()">Mark all as read</span>
+  </div>
+  <div id="notif-list">
+    <div class="nd-item">
+      <div class="nd-icon g"><i class="fa-solid fa-calendar-check" style="font-size:14px;"></i></div>
+      <div class="nd-body"><div class="nd-msg">Appointment confirmed for June 20 at 10:00 AM with Dr. Santos.</div><div class="nd-time">Just now</div></div>
+      <div class="nd-unread"></div>
+    </div>
+    <div class="nd-item">
+      <div class="nd-icon b"><i class="fa-solid fa-clock" style="font-size:14px;"></i></div>
+      <div class="nd-body"><div class="nd-msg">Now serving Queue 44. You are Queue 47. ~15 min wait.</div><div class="nd-time">5 minutes ago</div></div>
+      <div class="nd-unread"></div>
+    </div>
+    <div class="nd-item">
+      <div class="nd-icon a"><i class="fa-solid fa-bell" style="font-size:14px;"></i></div>
+      <div class="nd-body"><div class="nd-msg">Reminder: You have an appointment tomorrow at 9:00 AM.</div><div class="nd-time">1 hour ago</div></div>
+      <div class="nd-unread"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand"><i class="fa-solid fa-heart-pulse"></i> CarePath</div>
+  <div class="tb-nav">
+    <button onclick="go('db')" id="nb-db" class="on">Dashboard</button>
+    <button onclick="go('sc')" id="nb-sc">Schedule</button>
+    <button onclick="go('qu')" id="nb-qu">Queue Status</button>
+    <button onclick="go('mr')" id="nb-mr">Medical Records</button>
+    <button onclick="go('pr')" id="nb-pr">Profile</button>
+  </div>
+  <div class="tb-right">
+    <button class="notif-btn" onclick="toggleNotif()" title="Notifications">
+      <i class="fa-solid fa-bell"></i>
+      <span class="notif-badge" id="notif-badge">3</span>
+    </button>
+    <div class="user-chip" onclick="go('pr')">
+      <i class="fa-solid fa-user"></i>
+      <span id="user-name">Guest</span>
+      <i class="fa-solid fa-chevron-down" style="font-size:11px;"></i>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ LOGIN ══════════════════════ -->
+<div class="pg on" id="pg-lg" style="min-height:calc(100vh - 60px);">
+  <div class="login-left">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:28px;">
+      <i class="fa-solid fa-heart-pulse" style="font-size:34px;color:var(--teal-mid);"></i>
+      <div><div style="font-size:24px;font-weight:700;color:#E1F5EE;">CarePath</div><div style="font-size:13px;color:#9FE1CB;">Patient Management System</div></div>
+    </div>
+    <p style="font-size:17px;font-weight:600;color:#E1F5EE;margin-bottom:10px;">Your health, managed simply.</p>
+    <p style="font-size:14px;color:#9FE1CB;line-height:1.8;margin-bottom:28px;">Book appointments, track your queue, and access your medical records — all in one place.</p>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-calendar-check" style="font-size:18px;color:var(--teal-mid);width:22px;"></i><span style="font-size:14px;color:#E1F5EE;">Book appointments online</span></div>
+      <div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-list-ol" style="font-size:18px;color:var(--teal-mid);width:22px;"></i><span style="font-size:14px;color:#E1F5EE;">Real-time queue tracking</span></div>
+      <div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-file-medical" style="font-size:18px;color:var(--teal-mid);width:22px;"></i><span style="font-size:14px;color:#E1F5EE;">Access your medical records</span></div>
+      <div style="display:flex;align-items:center;gap:10px;"><i class="fa-solid fa-bell" style="font-size:18px;color:var(--teal-mid);width:22px;"></i><span style="font-size:14px;color:#E1F5EE;">SMS &amp; in-app notifications</span></div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-form">
+      <div style="text-align:center;margin-bottom:22px;">
+        <div style="font-size:20px;font-weight:700;color:var(--dark);">Welcome back</div>
+        <div style="font-size:13px;color:var(--gray-text);margin-top:4px;">Sign in to your CarePath account</div>
+      </div>
+      <div class="tab-row">
+        <div class="tab on" onclick="switchTab('login')">Sign in</div>
+        <div class="tab" onclick="switchTab('register')">Register</div>
+      </div>
+      <!-- LOGIN FORM -->
+      <form id="login-form" onsubmit="doLogin(); return false;">
+        <div class="fg"><label><i class="fa-solid fa-id-badge" style="margin-right:5px;color:var(--teal);"></i>Patient ID or email</label><input type="text" id="lg-email" placeholder="e.g. 2024-00123 or juan@email.com" style="font-size:15px;padding:13px;"/></div>
+        <div class="fg">
+          <label><i class="fa-solid fa-lock" style="margin-right:5px;color:var(--teal);"></i>Password</label>
+          <div class="pw-wrap"><input type="password" id="lg-pw" placeholder="Enter your password" style="font-size:15px;padding:13px;"/><button type="button" class="pw-toggle" onclick="togglePw('lg-pw',this)"><i class="fa-solid fa-eye"></i></button></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:14px;color:var(--gray-text);cursor:pointer;"><input type="checkbox" style="width:16px;height:16px;accent-color:var(--teal);"/> Remember me</label>
+          <a style="font-size:13px;color:var(--teal);cursor:pointer;text-decoration:underline;" onclick="showToast('info','Password Reset','A reset link has been sent to your registered email.')">Forgot password?</a>
+        </div>
+        <button type="submit" class="btn btnP" style="width:100%;justify-content:center;padding:14px;font-size:16px;"> <i class="fa-solid fa-right-to-bracket"></i> Sign in to my account </button>
+        <div style="background:var(--gray-bg);border-radius:var(--radius-sm);padding:12px 14px;margin-top:14px;display:flex;align-items:flex-start;gap:8px;">
+    <i class="fa-solid fa-circle-info" ...></i>
+    <p>Need assistance? Our clinic staff can help you create an account at the front desk.</p>
+      </div>
+
+      </form>
+      
+      <!-- REGISTER FORM -->
+      <div id="register-form" class="reg-form">
+        <div class="g2" style="margin-bottom:0;">
+          <div class="fg"><label>First name</label><input type="text" placeholder="Juan"/></div>
+          <div class="fg"><label>Last name</label><input type="text" placeholder="Dela Cruz"/></div>
+        </div>
+        <div class="fg"><label>Email address</label><input type="email" placeholder="juan@email.com"/></div>
+        <div class="fg"><label>Phone number</label><input type="tel" placeholder="0912 345 6789"/></div>
+        <div class="fg">
+          <label>Password</label>
+          <div class="pw-wrap"><input type="password" id="rg-pw" placeholder="Create a password"/><button type="button" class="pw-toggle" onclick="togglePw('rg-pw',this)"><i class="fa-solid fa-eye"></i></button></div>
+        </div>
+        <div class="fg"><label><input type="checkbox" style="width:15px;height:15px;accent-color:var(--teal);margin-right:6px;"/>I agree to the terms and privacy policy</label></div>
+        <button class="btn btnP" style="width:100%;justify-content:center;padding:14px;font-size:16px;" onclick="doRegister()"><i class="fa-solid fa-user-plus"></i> Create my account</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ DASHBOARD ══════════════════════ -->
+<div class="pg" id="pg-db">
+  <div class="sidebar">
+    <div class="sb-section">Main menu</div>
+    <div class="sb-item on" onclick="go('db')"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+    <div class="sb-item" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Schedule</div>
+    <div class="sb-item" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i> Queue Status</div>
+    <div class="sb-item" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i> Medical Records</div>
+    <div class="sb-item" onclick="go('pr')"><i class="fa-solid fa-user"></i> Profile</div>
+    <div class="sb-section" style="margin-top:12px;">Today's queue</div>
+    <div class="sb-queue-widget">
+      <div class="sqw-label">Your number</div>
+      <div class="sqw-num">47</div>
+      <div class="sqw-sub">~15 min wait</div>
+    </div>
+    <div class="sb-bottom">
+      <button class="btn btnD" style="width:100%;justify-content:center;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button>
+    </div>
+  </div>
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div><div class="ph">Good morning, Juan Dela Cruz 👋</div><div class="ps">Patient ID: 2024-00123 &nbsp;·&nbsp; Thursday, June 19, 2025</div></div>
+      <button class="btn btnP" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Book appointment</button>
+    </div>
+    <div class="g4">
+      <div class="met"><div class="ml"><i class="fa-solid fa-list-ol"></i> Queue number</div><div class="mv">47</div><div class="ms">General · today</div></div>
+      <div class="met"><div class="ml"><i class="fa-solid fa-clock"></i> Est. wait time</div><div class="mv">~15 min</div><div class="ms">Now serving: 44</div></div>
+      <div class="met"><div class="ml"><i class="fa-solid fa-calendar"></i> Upcoming</div><div class="mv">2</div><div class="ms">Next: June 20</div></div>
+      <div class="met"><div class="ml"><i class="fa-solid fa-stethoscope"></i> Total visits</div><div class="mv">8</div><div class="ms">Since 2023</div></div>
+    </div>
+    <div class="g4">
+      <div class="qact" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i><div class="qt">Schedule Appointment</div><div class="qs">Book a new visit</div></div>
+      <div class="qact" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i><div class="qt">View Queue Status</div><div class="qs">Track your position</div></div>
+      <div class="qact" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i><div class="qt">Medical Records</div><div class="qs">View your history</div></div>
+      <div class="qact" onclick="go('pr')"><i class="fa-solid fa-user-pen"></i><div class="qt">Update Profile</div><div class="qs">Manage your info</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="ct" style="margin:0;">Upcoming Appointments</div>
+          <button class="btn btnO" style="padding:6px 12px;font-size:12px;" onclick="go('sc')"><i class="fa-solid fa-plus"></i> New</button>
+        </div>
+        <div class="row"><div class="ico"><i class="fa-solid fa-stethoscope"></i></div><div class="ri"><div class="rn">General Consultation</div><div class="rd">June 20 · 9:00 AM · Dr. Santos · Room 3</div></div><span class="bdg bg">Confirmed</span></div>
+        <div class="row"><div class="ico"><i class="fa-solid fa-eye"></i></div><div class="ri"><div class="rn">Eye Check-up</div><div class="rd">June 27 · 2:00 PM · Dr. Reyes · Room 7</div></div><span class="bdg ba">Pending</span></div>
+        <div class="row"><div class="ico"><i class="fa-solid fa-heart-pulse"></i></div><div class="ri"><div class="rn">Cardiology Follow-up</div><div class="rd">July 3 · 10:00 AM · Dr. Cruz · Room 12</div></div><span class="bdg bs">Scheduled</span></div>
+      </div>
+      <div class="card">
+        <div class="ct">Recent Notifications <span class="notif-badge" id="dashboard-notif-count" style="position:static;display:inline-flex;margin-left:4px;">3</span></div>
+        <div id="dashboard-notif-list">
+          <div class="row"><div class="ico"><i class="fa-solid fa-calendar-check"></i></div><div class="ri"><div class="rn">Appointment confirmed</div><div class="rd">June 20 visit with Dr. Santos is confirmed.</div></div><div style="font-size:11px;color:var(--gray-text);">Now</div></div>
+          <div class="row"><div class="ico"><i class="fa-solid fa-clock"></i></div><div class="ri"><div class="rn">Queue update</div><div class="rd">Now serving no. 44. You are no. 47.</div></div><div style="font-size:11px;color:var(--gray-text);">5m</div></div>
+          <div class="row"><div class="ico"><i class="fa-solid fa-bell"></i></div><div class="ri"><div class="rn">Reminder: tomorrow's visit</div><div class="rd">Don't forget your 9:00 AM appointment.</div></div><div style="font-size:11px;color:var(--gray-text);">1h</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ SCHEDULE ══════════════════════ -->
+<div class="pg" id="pg-sc">
+  <div class="sidebar">
+    <div class="sb-item" onclick="go('db')"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+    <div class="sb-item on" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Schedule</div>
+    <div class="sb-item" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i> Queue Status</div>
+    <div class="sb-item" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i> Medical Records</div>
+    <div class="sb-item" onclick="go('pr')"><i class="fa-solid fa-user"></i> Profile</div>
+    <div class="sb-bottom"><button class="btn btnD" style="width:100%;justify-content:center;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button></div>
+  </div>
+  <div class="main">
+    <div class="ph">Schedule an Appointment</div>
+    <div class="ps">Follow the steps below to book your visit.</div>
+    <!-- STEP BAR -->
+    <div class="card" style="margin-bottom:18px;">
+      <div class="stbar" id="step-bar">
+        <div class="sti" id="s1"><div class="stc">1</div><div>Department</div></div>
+        <div class="stl" id="sl1"></div>
+        <div class="sti" id="s2"><div class="stc">2</div><div>Doctor</div></div>
+        <div class="stl" id="sl2"></div>
+        <div class="sti" id="s3"><div class="stc">3</div><div>Date &amp; Time</div></div>
+        <div class="stl" id="sl3"></div>
+        <div class="sti" id="s4"><div class="stc">4</div><div>Confirm</div></div>
+      </div>
+      <!-- STEP 1 -->
+      <div class="step-panel on" id="panel-1">
+        <div class="ct">Select a Department</div>
+        <div class="g4" id="dept-grid">
+          <div class="dc" onclick="selectDept(this,'General Consultation','fa-stethoscope')"><i class="fa-solid fa-stethoscope"></i><span>General Consultation</span></div>
+          <div class="dc" onclick="selectDept(this,'Ophthalmology','fa-eye')"><i class="fa-solid fa-eye"></i><span>Ophthalmology</span></div>
+          <div class="dc" onclick="selectDept(this,'Cardiology','fa-heart-pulse')"><i class="fa-solid fa-heart-pulse"></i><span>Cardiology</span></div>
+          <div class="dc" onclick="selectDept(this,'Neurology','fa-brain')"><i class="fa-solid fa-brain"></i><span>Neurology</span></div>
+          <div class="dc" onclick="selectDept(this,'Orthopedics','fa-bone')"><i class="fa-solid fa-bone"></i><span>Orthopedics</span></div>
+          <div class="dc" onclick="selectDept(this,'Pediatrics','fa-baby')"><i class="fa-solid fa-baby"></i><span>Pediatrics</span></div>
+          <div class="dc" onclick="selectDept(this,'Immunization','fa-syringe')"><i class="fa-solid fa-syringe"></i><span>Immunization</span></div>
+          <div class="dc" onclick="selectDept(this,'Pulmonology','fa-lungs')"><i class="fa-solid fa-lungs"></i><span>Pulmonology</span></div>
+        </div>
+        <button
+    id="next-step1"
+    class="btn btnP"
+    style="margin-top:8px;"
+    onclick="nextStep(2)"
+    disabled>
+
+    <i class="fa-solid fa-arrow-right"></i>
+    Next: Select Doctor
+
+</button>
+      </div>
+      <!-- STEP 2 -->
+      <div class="step-panel" id="panel-2">
+        <div class="ct">Select a Doctor</div>
+        <div class="g2" id="doc-grid">
+          <div class="doc-card" data-department="General Consultation" onclick="selectDoc(this,'Dr. Maria Santos')">
+            <div class="doc-avatar">MS</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Maria Santos</div>
+              <div style="font-size:12px;color:var(--gray-text);">General Consultation · Room 3</div>
+              <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
+            </div>
+          </div>
+          <div class="doc-card" data-department="Ophthalmology" onclick="selectDoc(this,'Dr. Ramon Reyes')">
+            <div class="doc-avatar">RR</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Ramon Reyes</div>
+              <div style="font-size:12px;color:var(--gray-text);">Ophthalmology · Room 7</div>
+              <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
+            </div>
+          </div>
+          <div class="doc-card" data-department="Cardiology" onclick="selectDoc(this,'Dr. Ana Cruz')">
+            <div class="doc-avatar">AC</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Ana Cruz</div>
+              <div style="font-size:12px;color:var(--gray-text);">Cardiology · Room 12</div>
+              <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
+            </div>
+          </div>
+          <div class="doc-card" data-department="Neurology" onclick="selectDoc(this,'Dr. Jose Lim')">
+            <div class="doc-avatar">JL</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Jose Lim</div>
+              <div style="font-size:12px;color:var(--gray-text);">Neurology · Room 5</div>
+              <div style="font-size:12px;color:var(--gray-text);margin-top:4px;"><i class="fa-solid fa-circle" style="font-size:8px;color:var(--amber);"></i> Next available: June 21</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:12px;">
+          <button class="btn btnO" onclick="nextStep(1)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button id="next-step2" class="btn btnP" onclick="nextStep(3)" disabled><i class="fa-solid fa-arrow-right"></i> Next: Date &amp; Time</button>
+        </div>
+      </div>  
+      <!-- STEP 3 -->
+      <div class="step-panel" id="panel-3">
+        <div class="g2">
+          <div>
+            <div class="ct">Choose Date &amp; Time</div>
+            <div class="g2">
+              <div class="fg"><label><i class="fa-solid fa-calendar" style="color:var(--teal);margin-right:5px;"></i>Preferred date</label><input type="date" id="appt-date" onchange="updateSummary();updateNextButtons();"/></div>
+              <div class="fg"><label><i class="fa-solid fa-user-doctor" style="color:var(--teal);margin-right:5px;"></i>Doctor</label><input type="text" id="appt-doc" readonly placeholder="Select a doctor first"></div>
+            </div>
+            <div class="ct" style="margin-top:4px;">Available time slots</div>
+            <div class="slot-grid">
+              <div class="slot tk">8:00 AM</div><div class="slot tk">9:00 AM</div>
+              <div class="slot" onclick="selectSlot(this,'10:00 AM')">10:00 AM</div>
+              <div class="slot" onclick="selectSlot(this,'11:00 AM')">11:00 AM</div>
+              <div class="slot tk">1:00 PM</div>
+              <div class="slot" onclick="selectSlot(this,'2:00 PM')">2:00 PM</div>
+              <div class="slot" onclick="selectSlot(this,'3:00 PM')">3:00 PM</div>
+              <div class="slot tk">4:00 PM</div>
+              <div class="slot" onclick="selectSlot(this,'4:30 PM')">4:30 PM</div>
+              <div class="slot tk">5:00 PM</div>
+            </div>
+            <div style="display:flex;gap:14px;font-size:12px;color:var(--gray-text);margin-bottom:14px;">
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--teal);display:inline-block;"></span>Selected</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--gray-bg);display:inline-block;"></span>Taken</span>
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;border:1.5px solid var(--gray-border);display:inline-block;"></span>Available</span>
+            </div>
+            <div class="fg"><label><i class="fa-solid fa-bell" style="color:var(--teal);margin-right:5px;"></i>SMS reminder preference</label><select><option>Send reminder 1 day before</option><option>Send reminder 2 hours before</option><option>No reminder</option></select></div>
+          </div>
+          <div>
+            <div class="ct">Appointment Summary</div>
+            <table class="tb" style="margin-bottom:14px;">
+              <tr><td style="color:var(--gray-text);width:40%;padding:9px 8px;">Department</td><td style="font-weight:600;padding:9px 8px;" id="sum-dept">—</td></tr>
+              <tr><td style="color:var(--gray-text);padding:9px 8px;">Doctor</td><td style="font-weight:600;padding:9px 8px;" id="sum-doc">—</td></tr>
+              <tr><td style="color:var(--gray-text);padding:9px 8px;">Date</td><td style="font-weight:600;padding:9px 8px;" id="sum-date">—</td></tr>
+              <tr><td style="color:var(--gray-text);padding:9px 8px;">Time</td><td style="font-weight:600;padding:9px 8px;" id="sum-time">—</td></tr>
+              <tr><td style="color:var(--gray-text);padding:9px 8px;">Patient</td><td style="font-weight:600;padding:9px 8px;">Juan Dela Cruz</td></tr>
+            </table>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button class="btn btnO" onclick="nextStep(2)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button id="next-step3" class="btn btnP" onclick="nextStep(4)" disabled><i class="fa-solid fa-arrow-right"></i> Next: Confirm</button>
+        </div>
+      </div>
+      <!-- STEP 4 -->
+      <div class="step-panel" id="panel-4">
+        <div class="g2">
+          <div>
+            <div class="ct">Confirm your appointment</div>
+            <div style="background:var(--gray-bg);border-radius:var(--radius);padding:20px;margin-bottom:16px;">
+              <table class="tb">
+                <tr><td style="color:var(--gray-text);width:38%;padding:10px 8px;">Department</td><td style="font-weight:600;padding:10px 8px;" id="cf-dept">—</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Doctor</td><td style="font-weight:600;padding:10px 8px;" id="cf-doc">—</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Date</td><td style="font-weight:600;padding:10px 8px;" id="cf-date">—</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Time</td><td style="font-weight:600;padding:10px 8px;" id="cf-time">—</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Room</td><td style="font-weight:600;padding:10px 8px;">Room 3</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Patient</td><td style="font-weight:600;padding:10px 8px;">Juan Dela Cruz</td></tr>
+              </table>
+            </div>
+            <div class="info-box"><i class="fa-solid fa-bell"></i><p>An SMS confirmation will be sent to your registered phone number once this appointment is confirmed.</p></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="card" style="border:2px solid var(--teal-light);">
+              <div style="font-size:14px;font-weight:600;color:var(--dark);margin-bottom:8px;"><i class="fa-solid fa-mobile-screen" style="color:var(--teal);margin-right:6px;"></i>SMS Preview</div>
+              <div style="background:#1A2332;border-radius:12px;padding:16px;">
+                <div style="background:#fff;border-radius:10px 10px 10px 2px;padding:12px;max-width:90%;">
+                  <div style="font-size:11px;color:#9FE1CB;margin-bottom:4px;font-weight:600;">CarePath — PHPMS</div>
+                  <div style="font-size:13px;color:#1A2332;line-height:1.6;" id="sms-preview-text"> Waiting for appointment details... </div>
+                  <div style="font-size:11px;color:#6B7280;text-align:right;margin-top:4px;">Just now</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;">
+          <button class="btn btnO" onclick="nextStep(3)"><i class="fa-solid fa-arrow-left"></i> Back</button>
+          <button class="btn btnP" style="flex:1;justify-content:center;padding:13px;font-size:15px;" onclick="confirmAppt()"><i class="fa-solid fa-calendar-check"></i> Confirm Appointment</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ QUEUE STATUS ══════════════════════ -->
+<div class="pg" id="pg-qu">
+  <div class="sidebar">
+    <div class="sb-item" onclick="go('db')"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+    <div class="sb-item" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Schedule</div>
+    <div class="sb-item on" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i> Queue Status</div>
+    <div class="sb-item" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i> Medical Records</div>
+    <div class="sb-item" onclick="go('pr')"><i class="fa-solid fa-user"></i> Profile</div>
+    <div style="padding:16px;margin-top:16px;border-top:1px solid var(--gray-border);">
+      <div style="font-size:12px;color:var(--gray-text);margin-bottom:8px;font-weight:500;">SMS alerts</div>
+      <div style="display:flex;align-items:center;gap:8px;" onclick="toggleSMS()">
+        <div class="tog" id="sms-tog"></div>
+        <span style="font-size:13px;color:var(--teal);font-weight:500;" id="sms-status">Enabled</span>
+      </div>
+    </div>
+    <div class="sb-bottom"><button class="btn btnD" style="width:100%;justify-content:center;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button></div>
+  </div>
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div><div class="ph">Queue Status</div><div class="ps">Real-time tracking — General Consultation · Dr. Santos · Room 3</div></div>
+      <span class="live-dot"><span></span> Live</span>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="qh">
+          <div style="font-size:14px;color:var(--gray-text);margin-bottom:6px;font-weight:500;">Your queue number</div>
+          <div class="qb">47</div>
+          <div style="font-size:15px;color:var(--gray-text);margin-top:8px;">Currently serving: <strong style="color:var(--teal);">Queue 44</strong></div>
+          <div class="qeta"><i class="fa-solid fa-clock"></i> Estimated wait: ~15 minutes</div>
+        </div>
+        <table class="tb" style="margin-bottom:14px;">
+          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Department</td><td style="font-weight:600;font-size:13px;padding:9px;">General Consultation</td></tr>
+          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Doctor</td><td style="font-weight:600;font-size:13px;padding:9px;">Dr. Maria Santos</td></tr>
+          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Room</td><td style="font-weight:600;font-size:13px;padding:9px;">Room 3</td></tr>
+          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Date</td><td style="font-weight:600;font-size:13px;padding:9px;">June 19, 2025</td></tr>
+        </table>
+        <div class="info-box"><i class="fa-solid fa-bell"></i><p>You will receive an SMS when it is almost your turn. Please stay nearby and keep your phone within reach.</p></div>
+        <button class="btn btnO" style="width:100%;justify-content:center;margin-top:12px;" onclick="showSMS('Queue update: Now serving no. 44. You are no. 47 — approximately 15 minutes remaining. Please stay nearby. — CarePath PHPMS')"><i class="fa-solid fa-mobile-screen"></i> Preview SMS notification</button>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="ct" style="margin:0;">Live Queue List</div>
+          <span class="live-dot"><span></span> Updating</span>
+        </div>
+        <div class="qrow" style="background:var(--gray-bg);border-color:var(--gray-border);">
+          <div class="qnum d"><i class="fa-solid fa-check"></i></div>
+          <div style="flex:1;"><div style="font-size:14px;color:var(--gray-text);">Queue 43</div><div style="font-size:12px;color:var(--gray-text);">Dr. Santos · Room 3</div></div>
+          <span class="bdg bs">Done</span>
+        </div>
+        <div class="qrow now">
+          <div class="qnum c">44</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:600;color:#085041;">Queue 44 — Now serving</div><div style="font-size:12px;color:var(--teal);">Dr. Santos · Room 3</div></div>
+          <span class="bdg bg">Now serving</span>
+        </div>
+        <div class="qrow"><div class="qnum w">45</div><div style="flex:1;"><div style="font-size:14px;color:var(--dark);">Queue 45</div><div style="font-size:12px;color:var(--gray-text);">Dr. Santos · Room 3</div></div><span class="bdg ba">Waiting</span></div>
+        <div class="qrow"><div class="qnum w">46</div><div style="flex:1;"><div style="font-size:14px;color:var(--dark);">Queue 46</div><div style="font-size:12px;color:var(--gray-text);">Dr. Santos · Room 3</div></div><span class="bdg ba">Waiting</span></div>
+        <div class="qrow you">
+          <div class="qnum c">47</div>
+          <div style="flex:1;"><div style="font-size:14px;font-weight:700;color:#085041;">Queue 47 — YOU <span class="bdg bg" style="margin-left:6px;font-size:11px;">You</span></div><div style="font-size:12px;color:var(--teal);">Juan Dela Cruz · Room 3</div></div>
+          <span class="bdg ba">~15 min</span>
+        </div>
+        <div class="qrow"><div class="qnum w">48</div><div style="flex:1;"><div style="font-size:14px;color:var(--dark);">Queue 48</div><div style="font-size:12px;color:var(--gray-text);">Dr. Santos · Room 3</div></div><span class="bdg ba">Waiting</span></div>
+        <div class="qrow"><div class="qnum w">49</div><div style="flex:1;"><div style="font-size:14px;color:var(--dark);">Queue 49</div><div style="font-size:12px;color:var(--gray-text);">Dr. Santos · Room 3</div></div><span class="bdg ba">Waiting</span></div>
+        <p style="font-size:12px;color:var(--gray-text);margin-top:10px;"><i class="fa-solid fa-shield-halved" style="margin-right:4px;"></i>Other patient names are hidden for privacy.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ MEDICAL RECORDS ══════════════════════ -->
+<div class="pg" id="pg-mr">
+  <div class="sidebar">
+    <div class="sb-item" onclick="go('db')"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+    <div class="sb-item" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Schedule</div>
+    <div class="sb-item" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i> Queue Status</div>
+    <div class="sb-item on" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i> Medical Records</div>
+    <div class="sb-item" onclick="go('pr')"><i class="fa-solid fa-user"></i> Profile</div>
+    <div class="sb-bottom"><button class="btn btnD" style="width:100%;justify-content:center;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button></div>
+  </div>
+  <div class="main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+      <div><div class="ph">Medical Records</div><div class="ps">Your complete health history in one place.</div></div>
+      <button class="btn btnP" onclick="showToast('success','Download started','Your medical records are being prepared for download.')"><i class="fa-solid fa-download"></i> Download records</button>
+    </div>
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="av">JD</div>
+        <div style="flex:1;">
+          <div style="font-size:18px;font-weight:700;color:var(--dark);">Juan Dela Cruz</div>
+          <div style="font-size:13px;color:var(--gray-text);margin-top:3px;">Patient ID: 2024-00123 &nbsp;·&nbsp; DOB: March 15, 1965 &nbsp;·&nbsp; Blood type: O+</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="text-align:center;padding:10px 18px;background:var(--gray-bg);border-radius:var(--radius);"><div style="font-size:11px;color:var(--gray-text);margin-bottom:2px;">Total visits</div><div style="font-size:22px;font-weight:700;color:var(--teal);">8</div></div>
+          <div style="text-align:center;padding:10px 18px;background:var(--gray-bg);border-radius:var(--radius);"><div style="font-size:11px;color:var(--gray-text);margin-bottom:2px;">Last visit</div><div style="font-size:16px;font-weight:700;color:var(--dark);">June 10</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:18px;">
+      <div style="flex:1;position:relative;"><input id="records-search" type="text" placeholder="Search records by date, doctor, or diagnosis..." style="width:100%;padding:10px 12px 10px 38px;font-size:14px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);background:#fff;color:var(--dark);" oninput="filterRecords(this.value)"/><i class="fa-solid fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--gray-text);"></i></div>
+      <input id="records-date" type="date" onchange="filterRecords()" style="padding:10px 12px;font-size:14px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);background:#fff;color:var(--dark);"/>
+      <select id="records-category" onchange="filterRecords()" style="padding:10px 12px;font-size:14px;border:1.5px solid var(--gray-border);border-radius:var(--radius-sm);background:#fff;color:var(--dark);"><option value="all">All categories</option><option value="consultations">Consultations</option><option value="lab-results">Lab results</option><option value="prescriptions">Prescriptions</option><option value="vaccinations">Vaccinations</option></select>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="ct">Recent Consultations</div>
+          <table class="tb" id="consult-table">
+            <thead><tr><th>Date</th><th>Department</th><th>Doctor</th><th>Diagnosis</th><th></th></tr></thead>
+            <tbody>
+              <tr class="record-row" data-category="consultations" data-date="2025-06-10"><td>June 10, 2025</td><td>General</td><td>Dr. Santos</td><td>Hypertension follow-up</td><td><button class="btn btnO" style="padding:5px 10px;font-size:12px;" onclick="showRecordModal('Hypertension follow-up','June 10, 2025','Dr. Santos','General Consultation','Hypertension follow-up')">View</button></td></tr>
+              <tr class="record-row" data-category="consultations" data-date="2025-05-22"><td>May 22, 2025</td><td>Cardiology</td><td>Dr. Cruz</td><td>Cardiac check-up</td><td><button class="btn btnO" style="padding:5px 10px;font-size:12px;" onclick="showRecordModal('Cardiac check-up','May 22, 2025','Dr. Cruz','Cardiology','Cardiac check-up')">View</button></td></tr>
+              <tr class="record-row" data-category="consultations" data-date="2025-04-15"><td>Apr 15, 2025</td><td>Ophthalmology</td><td>Dr. Reyes</td><td>Cataract screening</td><td><button class="btn btnO" style="padding:5px 10px;font-size:12px;" onclick="showRecordModal('Cataract screening','Apr 15, 2025','Dr. Reyes','Ophthalmology','Cataract screening')">View</button></td></tr>
+              <tr class="record-row" data-category="consultations" data-date="2025-03-08"><td>Mar 8, 2025</td><td>General</td><td>Dr. Santos</td><td>Annual check-up</td><td><button class="btn btnO" style="padding:5px 10px;font-size:12px;" onclick="showRecordModal('Annual check-up','Mar 8, 2025','Dr. Santos','General Consultation','Annual check-up')">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="ct">Prescriptions</div>
+          <table class="tb">
+            <thead><tr><th>Medicine</th><th>Dosage</th><th>Prescribed by</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr class="record-row" data-category="prescriptions" data-date="2025-06-10"><td>Amlodipine</td><td>5mg · once daily</td><td>Dr. Santos</td><td><span class="bdg bg">Active</span></td></tr>
+              <tr class="record-row" data-category="prescriptions" data-date="2025-05-22"><td>Metformin</td><td>500mg · twice daily</td><td>Dr. Cruz</td><td><span class="bdg bg">Active</span></td></tr>
+              <tr class="record-row" data-category="prescriptions" data-date="2025-04-15"><td>Aspirin</td><td>80mg · once daily</td><td>Dr. Cruz</td><td><span class="bdg bs">Completed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="ct">Laboratory Results</div>
+          <div class="row record-row" data-category="lab-results" data-date="2025-06-10"><div class="ico"><i class="fa-solid fa-flask"></i></div><div class="ri"><div class="rn">Complete blood count</div><div class="rd">June 10, 2025 · Dr. Santos</div></div><button class="btn btnO" style="padding:5px 11px;font-size:12px;" onclick="showToast('success','Download started','Downloading: Complete blood count report')"><i class="fa-solid fa-download"></i></button></div>
+          <div class="row record-row" data-category="lab-results" data-date="2025-05-22"><div class="ico"><i class="fa-solid fa-flask"></i></div><div class="ri"><div class="rn">Blood glucose (fasting)</div><div class="rd">May 22, 2025 · Dr. Cruz</div></div><button class="btn btnO" style="padding:5px 11px;font-size:12px;" onclick="showToast('success','Download started','Downloading: Blood glucose report')"><i class="fa-solid fa-download"></i></button></div>
+          <div class="row record-row" data-category="lab-results" data-date="2025-04-15"><div class="ico"><i class="fa-solid fa-flask"></i></div><div class="ri"><div class="rn">Lipid profile</div><div class="rd">Apr 15, 2025 · Dr. Reyes</div></div><button class="btn btnO" style="padding:5px 11px;font-size:12px;" onclick="showToast('success','Download started','Downloading: Lipid profile report')"><i class="fa-solid fa-download"></i></button></div>
+        </div>
+        <div class="card">
+          <div class="ct">Vaccination History</div>
+          <div class="row record-row" data-category="vaccinations" data-date="2025-03-01"><div class="ico"><i class="fa-solid fa-syringe"></i></div><div class="ri"><div class="rn">COVID-19 booster</div><div class="rd">March 2025</div></div><span class="bdg bg">Complete</span></div>
+          <div class="row record-row" data-category="vaccinations" data-date="2024-11-01"><div class="ico"><i class="fa-solid fa-syringe"></i></div><div class="ri"><div class="rn">Influenza vaccine</div><div class="rd">November 2024</div></div><span class="bdg bg">Complete</span></div>
+          <div class="row record-row" data-category="vaccinations" data-date="2024-06-01"><div class="ico"><i class="fa-solid fa-syringe"></i></div><div class="ri"><div class="rn">Pneumococcal vaccine</div><div class="rd">June 2024</div></div><span class="bdg bg">Complete</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════ PROFILE ══════════════════════ -->
+<div class="pg" id="pg-pr">
+  <div class="sidebar">
+    <div class="sb-item" onclick="go('db')"><i class="fa-solid fa-gauge"></i> Dashboard</div>
+    <div class="sb-item" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Schedule</div>
+    <div class="sb-item" onclick="go('qu')"><i class="fa-solid fa-list-ol"></i> Queue Status</div>
+    <div class="sb-item" onclick="go('mr')"><i class="fa-solid fa-file-medical"></i> Medical Records</div>
+    <div class="sb-item on" onclick="go('pr')"><i class="fa-solid fa-user"></i> Profile</div>
+    <div class="sb-bottom"><button class="btn btnD" style="width:100%;justify-content:center;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out</button></div>
+  </div>
+  <div class="main">
+    <div class="ph">Profile &amp; Account Settings</div>
+    <div class="ps">Manage your personal information and preferences.</div>
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:18px;">
+        <div style="position:relative;">
+          <div id="profile-avatar-initials" class="avatar-lg">JD<div class="av-edit" onclick="showToast('info','Upload photo','Click to upload a new profile photo.')"><i class="fa-solid fa-camera"></i></div></div>
+        </div>
+        <div style="flex:1;">
+          <div id="profile-display-name" style="font-size:20px;font-weight:700;color:var(--dark);">Juan Dela Cruz</div>
+          <div style="font-size:13px;color:var(--gray-text);margin-top:3px;">Patient ID: 2024-00123 &nbsp;·&nbsp; Member since 2023</div>
+        </div>
+        <button id="edit-profile-btn" class="btn btnP" onclick="enableProfileEditing()"><i class="fa-solid fa-pen"></i> Edit Profile</button>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="ct">Personal Information</div>
+          <div class="g2">
+            <div class="fg"><label>First name</label><input id="profile-first-name" class="profile-input" type="text" value="Juan" disabled/></div>
+            <div class="fg"><label>Last name</label><input id="profile-last-name" class="profile-input" type="text" value="Dela Cruz" disabled/></div>
+            <div class="fg"><label>Email address</label><input id="profile-email" class="profile-input" type="email" value="juan.delacruz@email.com" disabled/></div>
+            <div class="fg"><label>Phone number</label><input id="profile-phone" class="profile-input" type="tel" value="+63 912 345 6789" disabled/></div>
+          </div>
+          <div class="fg"><label>Home address</label><textarea id="profile-address" class="profile-input" disabled>123 Mabini St., Barangay San Antonio, Cebu City, 6000</textarea></div>
+          <button id="save-personal-btn" class="btn btnP profile-save-btn" onclick="saveProfileChanges()" disabled><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
+        </div>
+        <div class="card">
+          <div class="ct">Emergency Contact</div>
+          <div class="g2">
+            <div class="fg"><label>Contact name</label><input id="profile-emergency-name" class="profile-input" type="text" value="Maria Dela Cruz" disabled/></div>
+            <div class="fg"><label>Relationship</label><input id="profile-emergency-relationship" class="profile-input" type="text" value="Spouse" disabled/></div>
+            <div class="fg"><label>Phone number</label><input id="profile-emergency-phone" class="profile-input" type="tel" value="+63 917 876 5432" disabled/></div>
+            <div class="fg"><label>Email</label><input id="profile-emergency-email" class="profile-input" type="email" value="maria@email.com" disabled/></div>
+          </div>
+          <button id="save-emergency-btn" class="btn btnP profile-save-btn" onclick="saveProfileChanges()" disabled><i class="fa-solid fa-floppy-disk"></i> Save changes</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="ct">Notification Preferences</div>
+          <div class="ntf-row"><div><div class="ntf-l">SMS notifications</div><div class="ntf-s">Receive appointment and queue updates via SMS</div></div><div class="tog" onclick="toggleNtf(this)"></div></div>
+          <div class="ntf-row"><div><div class="ntf-l">Email notifications</div><div class="ntf-s">Receive reminders and confirmations via email</div></div><div class="tog" onclick="toggleNtf(this)"></div></div>
+          <div class="ntf-row"><div><div class="ntf-l">Queue alerts</div><div class="ntf-s">Alert when 3 patients ahead of you</div></div><div class="tog" onclick="toggleNtf(this)"></div></div>
+          <div class="ntf-row"><div><div class="ntf-l">Appointment reminders</div><div class="ntf-s">Day-before reminder for upcoming visits</div></div><div class="tog off" onclick="toggleNtf(this)"></div></div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="ct">Account Security</div>
+          <div class="row"><div class="ico"><i class="fa-solid fa-lock"></i></div><div class="ri"><div class="rn">Password</div><div class="rd">Last changed 3 months ago</div></div><button class="btn btnO" style="padding:6px 12px;font-size:12px;" onclick="showToast('info','Change password','A password reset link has been sent to your email.')">Change</button></div>
+          <div class="row"><div class="ico"><i class="fa-solid fa-shield-halved"></i></div><div class="ri"><div class="rn">Two-factor authentication</div><div class="rd">Not enabled</div></div><button class="btn btnO" style="padding:6px 12px;font-size:12px;" onclick="showToast('info','2FA setup','Follow the steps sent to your email to enable 2FA.')">Enable</button></div>
+        </div>
+        <div class="card" style="border:1.5px solid var(--red-light);">
+          <div class="ct" style="color:var(--red);">Sign Out</div>
+          <p style="font-size:14px;color:var(--gray-text);margin-bottom:14px;line-height:1.6;">You will be logged out of your CarePath account on this device.</p>
+          <button class="btn btnD" style="width:100%;justify-content:center;padding:12px;font-size:15px;" onclick="go('lg')"><i class="fa-solid fa-right-from-bracket"></i> Sign out of CarePath</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="record-modal">
+  <div class="modal">
+    <div class="modal-title"><i class="fa-solid fa-file-medical" style="color:var(--teal)"></i> Medical Record Details</div>
+    <div class="modal-sub" id="record-modal-sub">Selected record</div>
+    <div id="record-modal-body" style="margin:14px 0 8px;color:var(--gray-text);line-height:1.7;"></div>
+    <button class="modal-close" onclick="closeRecordModal()"><i class="fa-solid fa-check"></i> Close</button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+HTMLEOF
+echo "Done"
