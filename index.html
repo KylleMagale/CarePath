@@ -167,13 +167,13 @@
   </div>
   <div class="main">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-      <div><div class="ph">Good morning, Juan Dela Cruz 👋</div><div class="ps">Patient ID: 2024-00123 &nbsp;·&nbsp; Thursday, June 19, 2025</div></div>
+      <div><div class="ph">Good morning, Juan Dela Cruz 👋</div><div class="ps">Patient ID: 2024-00123 &nbsp;·&nbsp; Thursday, June 20, 2025</div></div>
       <button class="btn btnP" onclick="go('sc')"><i class="fa-solid fa-calendar-plus"></i> Book appointment</button>
     </div>
     <div class="g4">
       <div class="met"><div class="ml"><i class="fa-solid fa-list-ol"></i> Queue number</div><div class="mv">47</div><div class="ms">General · today</div></div>
       <div class="met"><div class="ml"><i class="fa-solid fa-clock"></i> Est. wait time</div><div class="mv">~15 min</div><div class="ms">Now serving: 44</div></div>
-      <div class="met"><div class="ml"><i class="fa-solid fa-calendar"></i> Upcoming</div><div class="mv">2</div><div class="ms">Next: June 20</div></div>
+      <div class="met"><div class="ml"><i class="fa-solid fa-calendar"></i> Upcoming</div><div class="mv" id="upcoming-count">2</div><div class="ms" id="next-appointment-label">Next: June 20</div></div>
       <div class="met"><div class="ml"><i class="fa-solid fa-stethoscope"></i> Total visits</div><div class="mv">8</div><div class="ms">Since 2023</div></div>
     </div>
     <div class="g4">
@@ -188,9 +188,7 @@
           <div class="ct" style="margin:0;">Upcoming Appointments</div>
           <button class="btn btnO" style="padding:6px 12px;font-size:12px;" onclick="go('sc')"><i class="fa-solid fa-plus"></i> New</button>
         </div>
-        <div class="row"><div class="ico"><i class="fa-solid fa-stethoscope"></i></div><div class="ri"><div class="rn">General Consultation</div><div class="rd">June 20 · 9:00 AM · Dr. Santos · Room 3</div></div><span class="bdg bg">Confirmed</span></div>
-        <div class="row"><div class="ico"><i class="fa-solid fa-eye"></i></div><div class="ri"><div class="rn">Eye Check-up</div><div class="rd">June 27 · 2:00 PM · Dr. Reyes · Room 7</div></div><span class="bdg ba">Pending</span></div>
-        <div class="row"><div class="ico"><i class="fa-solid fa-heart-pulse"></i></div><div class="ri"><div class="rn">Cardiology Follow-up</div><div class="rd">July 3 · 10:00 AM · Dr. Cruz · Room 12</div></div><span class="bdg bs">Scheduled</span></div>
+        <div id="dashboard-upcoming-list"></div>
       </div>
       <div class="card">
         <div class="ct">Recent Notifications <span class="notif-badge" id="dashboard-notif-count" style="position:static;display:inline-flex;margin-left:4px;">3</span></div>
@@ -257,7 +255,7 @@
       <div class="step-panel" id="panel-2">
         <div class="ct">Select a Doctor</div>
         <div class="g2" id="doc-grid">
-          <div class="doc-card" data-department="General Consultation" onclick="selectDoc(this,'Dr. Maria Santos')">
+          <div class="doc-card" data-department="General Consultation" data-room="Room 3" onclick="selectDoc(this,'Dr. Maria Santos')">
             <div class="doc-avatar">MS</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Maria Santos</div>
@@ -265,7 +263,7 @@
               <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
             </div>
           </div>
-          <div class="doc-card" data-department="Ophthalmology" onclick="selectDoc(this,'Dr. Ramon Reyes')">
+          <div class="doc-card" data-department="Ophthalmology" data-room="Room 7" onclick="selectDoc(this,'Dr. Ramon Reyes')">
             <div class="doc-avatar">RR</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Ramon Reyes</div>
@@ -273,7 +271,7 @@
               <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
             </div>
           </div>
-          <div class="doc-card" data-department="Cardiology" onclick="selectDoc(this,'Dr. Ana Cruz')">
+          <div class="doc-card" data-department="Cardiology" data-room="Room 12" onclick="selectDoc(this,'Dr. Ana Cruz')">
             <div class="doc-avatar">AC</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Ana Cruz</div>
@@ -281,7 +279,7 @@
               <div style="font-size:12px;color:var(--teal);margin-top:4px;">Available today</div>
             </div>
           </div>
-          <div class="doc-card" data-department="Neurology" onclick="selectDoc(this,'Dr. Jose Lim')">
+          <div class="doc-card" data-department="Neurology" data-room="Room 5" onclick="selectDoc(this,'Dr. Jose Lim')">
             <div class="doc-avatar">JL</div>
             <div>
               <div style="font-size:14px;font-weight:600;color:var(--dark);">Dr. Jose Lim</div>
@@ -321,6 +319,10 @@
               <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:var(--gray-bg);display:inline-block;"></span>Taken</span>
               <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;border:1.5px solid var(--gray-border);display:inline-block;"></span>Available</span>
             </div>
+            <div style="background:var(--teal-light);border:1px solid rgba(8,80,65,0.12);border-radius:12px;padding:12px 14px;margin-bottom:12px;color:var(--teal);font-size:13px;line-height:1.5;">
+              <i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>
+              You can book up to 2 appointments for the same day. If you reach the limit, the Next button will stay disabled until you choose another date.
+            </div>
             <div class="fg"><label><i class="fa-solid fa-bell" style="color:var(--teal);margin-right:5px;"></i>SMS reminder preference</label><select><option>Send reminder 1 day before</option><option>Send reminder 2 hours before</option><option>No reminder</option></select></div>
           </div>
           <div>
@@ -350,7 +352,7 @@
                 <tr><td style="color:var(--gray-text);padding:10px 8px;">Doctor</td><td style="font-weight:600;padding:10px 8px;" id="cf-doc">—</td></tr>
                 <tr><td style="color:var(--gray-text);padding:10px 8px;">Date</td><td style="font-weight:600;padding:10px 8px;" id="cf-date">—</td></tr>
                 <tr><td style="color:var(--gray-text);padding:10px 8px;">Time</td><td style="font-weight:600;padding:10px 8px;" id="cf-time">—</td></tr>
-                <tr><td style="color:var(--gray-text);padding:10px 8px;">Room</td><td style="font-weight:600;padding:10px 8px;">Room 3</td></tr>
+                <tr><td style="color:var(--gray-text);padding:10px 8px;">Room</td><td style="font-weight:600;padding:10px 8px;" id="cf-room">—</td></tr>
                 <tr><td style="color:var(--gray-text);padding:10px 8px;">Patient</td><td style="font-weight:600;padding:10px 8px;">Juan Dela Cruz</td></tr>
               </table>
             </div>
@@ -412,7 +414,7 @@
           <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Department</td><td style="font-weight:600;font-size:13px;padding:9px;">General Consultation</td></tr>
           <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Doctor</td><td style="font-weight:600;font-size:13px;padding:9px;">Dr. Maria Santos</td></tr>
           <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Room</td><td style="font-weight:600;font-size:13px;padding:9px;">Room 3</td></tr>
-          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Date</td><td style="font-weight:600;font-size:13px;padding:9px;">June 19, 2025</td></tr>
+          <tr><td style="color:var(--gray-text);font-size:13px;padding:9px;">Date</td><td style="font-weight:600;font-size:13px;padding:9px;">June 20, 2025</td></tr>
         </table>
         <div class="info-box"><i class="fa-solid fa-bell"></i><p>You will receive an SMS when it is almost your turn. Please stay nearby and keep your phone within reach.</p></div>
         <button class="btn btnO" style="width:100%;justify-content:center;margin-top:12px;" onclick="showSMS('Queue update: Now serving no. 44. You are no. 47 — approximately 15 minutes remaining. Please stay nearby. — CarePath PHPMS')"><i class="fa-solid fa-mobile-screen"></i> Preview SMS notification</button>
