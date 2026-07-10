@@ -43,7 +43,23 @@ var selDoc = "";
 
 var selTime = "";
 
+var selRoom = "";
+
 var notifCount=3;
+
+const DEMO_TODAY = '2025-06-19';
+const MAX_APPOINTMENTS_PER_DAY = 2;
+const doctorRooms = {
+  'Dr. Maria Santos': 'Room 3',
+  'Dr. Ramon Reyes': 'Room 7',
+  'Dr. Ana Cruz': 'Room 12',
+  'Dr. Jose Lim': 'Room 5'
+};
+let upcomingAppointments = [
+  { department: 'General Consultation', doctor: 'Dr. Maria Santos', date: '2025-06-21', time: '9:00 AM', room: 'Room 3', reason: 'Routine checkup', status: 'Confirmed' },
+  { department: 'Ophthalmology', doctor: 'Dr. Ramon Reyes', date: '2025-06-27', time: '2:00 PM', room: 'Room 7', reason: 'Vision follow-up', status: 'Pending' },
+  { department: 'Cardiology', doctor: 'Dr. Ana Cruz', date: '2025-07-03', time: '10:00 AM', room: 'Room 12', reason: 'Cardiac review', status: 'Scheduled' }
+];
 
 // ── PAGE NAVIGATION ──
 function go(p){
@@ -54,6 +70,8 @@ function go(p){
   var nb=document.getElementById('nb-'+p);
   if(nb) nb.classList.add('on');
   closeNotif();
+  if(p === 'sc') resetScheduleWizard();
+  if(p === 'db') renderUpcomingAppointments();
   // show topbar only when not on login
   document.querySelector('.topbar').style.display = p==='lg'?'none':'flex';
 }
@@ -224,12 +242,7 @@ function nextStep(n){
   curStep=n;
   updateStepBar();
   if(n===4){
-    document.getElementById('cf-dept').textContent=selDept;
-    document.getElementById('cf-doc').textContent=selDoc;
-    document.getElementById('cf-time').textContent=selTime;
-    var d=document.getElementById('appt-date').value;
-    document.getElementById('cf-date').textContent=d?formatDate(d):'June 20, 2025';
-    document.getElementById('sms-preview-text').textContent = 'Your appointment on ' + (d ? formatDate(d) : 'June 20, 2025') + ' at ' + selTime + ' with ' + selDoc + ' is confirmed. — CarePath PHPMS';
+    updateAppointmentPreview();
   }
 }
 function updateStepBar(){
@@ -254,127 +267,231 @@ function updateNextButtons(){
     if(btn2)
         btn2.disabled = (selDoc === "");
 
-    const date =
-        document.getElementById("appt-date").value;
+    const date = document.getElementById("appt-date")?.value || "";
+    const validation = validateAppointmentSelection();
 
     if(btn3)
-        btn3.disabled =
-            (date === "") ||
-            (selTime === "");
+        btn3.disabled = !(selDept && selDoc && date && selTime && validation.valid);
 
+}
+
+function getDemoToday(){
+  return new Date(DEMO_TODAY + 'T00:00:00');
+}
+
+function parseAppointmentDate(dateValue){
+  return new Date(dateValue + 'T00:00:00');
+}
+
+function isPastAppointmentDate(dateValue){
+  if(!dateValue) return true;
+  return parseAppointmentDate(dateValue) < getDemoToday();
+}
+
+function getAppointmentCountForDate(dateValue){
+  return upcomingAppointments.filter(app => app.date === dateValue).length;
+}
+
+function findDuplicateAppointment(appointment){
+  return upcomingAppointments.find(app =>
+    app.patient === appointment.patient &&
+    app.doctor === appointment.doctor &&
+    app.department === appointment.department &&
+    app.date === appointment.date &&
+    app.time === appointment.time &&
+    app.reason === appointment.reason
+  );
+}
+
+function buildAppointmentPayload(){
+  const date = document.getElementById('appt-date')?.value || '';
+  return {
+    patient: 'Juan Dela Cruz',
+    department: selDept,
+    doctor: selDoc,
+    date: date,
+    time: selTime,
+    room: selRoom || doctorRooms[selDoc] || 'TBD',
+    reason: 'General consultation',
+    status: 'Confirmed'
+  };
+}
+
+function validateAppointmentSelection(){
+  const date = document.getElementById('appt-date')?.value || '';
+
+  if(!selDept) return { valid: false, message: 'Please select a department first.' };
+  if(!selDoc) return { valid: false, message: 'Please select a doctor first.' };
+  if(!date) return { valid: false, message: 'Please choose a preferred date.' };
+  if(isPastAppointmentDate(date)) return { valid: false, message: 'Past dates are not allowed in this demo system.' };
+  if(!selTime) return { valid: false, message: 'Please select a time slot.' };
+  if(getAppointmentCountForDate(date) >= MAX_APPOINTMENTS_PER_DAY){
+    return { valid: false, message: 'Only 2 appointments are allowed per day for the same date.' };
+  }
+  if(findDuplicateAppointment(buildAppointmentPayload())){
+    return { valid: false, message: 'This exact appointment already exists.' };
+  }
+  return { valid: true, message: '' };
+}
+
+function updateAppointmentPreview(){
+  const date = document.getElementById('appt-date')?.value || '';
+  const room = selRoom || doctorRooms[selDoc] || 'TBD';
+  const previewDate = date ? formatDate(date) : 'your selected date';
+  const previewTime = selTime || 'your selected time';
+  const previewDoctor = selDoc || 'your doctor';
+
+  document.getElementById('cf-dept').textContent = selDept || '—';
+  document.getElementById('cf-doc').textContent = selDoc || '—';
+  document.getElementById('cf-time').textContent = selTime || '—';
+  document.getElementById('cf-room').textContent = room;
+  document.getElementById('cf-date').textContent = date ? formatDate(date) : '—';
+  document.getElementById('sum-dept').textContent = selDept || '—';
+  document.getElementById('sum-doc').textContent = selDoc || '—';
+  document.getElementById('sum-date').textContent = date ? formatDate(date) : '—';
+  document.getElementById('sum-time').textContent = selTime || '—';
+
+  document.getElementById('sms-preview-text').textContent = 'Your appointment on ' + previewDate + ' at ' + previewTime + ' with ' + previewDoctor + ' is confirmed. — CarePath PHPMS';
+}
+
+function renderUpcomingAppointments(){
+  const listEl = document.getElementById('dashboard-upcoming-list');
+  const countEl = document.getElementById('upcoming-count');
+  const nextEl = document.getElementById('next-appointment-label');
+  if(!listEl) return;
+
+  const sorted = [...upcomingAppointments].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  listEl.innerHTML = '';
+
+  if(sorted.length === 0){
+    listEl.innerHTML = '<div class="row"><div class="ri"><div class="rn">No upcoming appointments</div><div class="rd">Book your next visit to see it here.</div></div></div>';
+  }else{
+    sorted.forEach(item => {
+      const iconMap = {
+        'General Consultation': 'fa-stethoscope',
+        'Ophthalmology': 'fa-eye',
+        'Cardiology': 'fa-heart-pulse',
+        'Neurology': 'fa-brain',
+        'Orthopedics': 'fa-bone',
+        'Pediatrics': 'fa-baby',
+        'Immunization': 'fa-syringe',
+        'Pulmonology': 'fa-lungs'
+      };
+      const badgeClass = item.status === 'Confirmed' ? 'bg' : (item.status === 'Pending' ? 'ba' : 'bs');
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = '<div class="ico"><i class="fa-solid ' + (iconMap[item.department] || 'fa-calendar') + '"></i></div><div class="ri"><div class="rn">' + item.department + '</div><div class="rd">' + formatDate(item.date) + ' · ' + item.time + ' · ' + item.doctor + ' · ' + item.room + '</div></div><span class="bdg ' + badgeClass + '">' + item.status + '</span>';
+      listEl.appendChild(row);
+    });
+  }
+
+  if(countEl) countEl.textContent = sorted.length;
+  if(nextEl){
+    const nextAppointment = sorted[0];
+    nextEl.textContent = nextAppointment ? 'Next: ' + formatDate(nextAppointment.date) : 'Next: none';
+  }
+}
+
+function resetScheduleWizard(){
+  curStep = 1;
+  selDept = "";
+  selDoc = "";
+  selTime = "";
+  selRoom = "";
+
+  document.querySelectorAll('.step-panel').forEach(panel => panel.classList.remove('on'));
+  const panel1 = document.getElementById('panel-1');
+  if(panel1) panel1.classList.add('on');
+
+  document.querySelectorAll('.dc').forEach(card => card.classList.remove('sel'));
+  document.querySelectorAll('.doc-card').forEach(card => card.classList.remove('sel'));
+  document.querySelectorAll('.slot:not(.tk)').forEach(slot => slot.classList.remove('sel'));
+
+  const dateInput = document.getElementById('appt-date');
+  if(dateInput) dateInput.value = '';
+  const docInput = document.getElementById('appt-doc');
+  if(docInput) docInput.value = '';
+  const reasonInput = document.getElementById('appt-reason');
+  if(reasonInput) reasonInput.value = '';
+
+  ['sum-dept','sum-doc','sum-date','sum-time','sum-reason','cf-dept','cf-doc','cf-date','cf-time','cf-room','cf-reason'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = '—';
+  });
+  const smsPreview = document.getElementById('sms-preview-text');
+  if(smsPreview) smsPreview.textContent = 'Waiting for appointment details...';
+
+  updateStepBar();
+  updateNextButtons();
 }
 
 function selectDept(el,name){
+  document.querySelectorAll('#dept-grid .dc').forEach(function(card){
+    card.classList.remove('sel');
+  });
 
-    document
-        .querySelectorAll("#dept-grid .dc")
-        .forEach(function(card){
+  el.classList.add('sel');
+  selDept = name;
+  selDoc = '';
+  selTime = '';
+  selRoom = '';
 
-            card.classList.remove("sel");
+  document.getElementById('sum-dept').textContent = name;
+  document.getElementById('sum-doc').textContent = '—';
+  document.getElementById('sum-time').textContent = '—';
+  document.getElementById('appt-doc').value = '';
 
-        });
+  document.querySelectorAll('.slot:not(.tk)').forEach(slot => slot.classList.remove('sel'));
 
-    el.classList.add("sel");
-
-    selDept = name;
-
-    selDoc = "";
-
-    document.getElementById("sum-dept").textContent =
-        name;
-
-    document.getElementById("sum-doc").textContent =
-        "—";
-
-    document.getElementById("appt-doc").value = "";
-
-    filterDoctors();
-
-    updateNextButtons();
-
+  filterDoctors();
+  updateNextButtons();
 }
 
 function selectDoc(el,name){
+  document.querySelectorAll('.doc-card').forEach(function(card){
+    card.classList.remove('sel');
+  });
 
-    document
-        .querySelectorAll(".doc-card")
-        .forEach(function(card){
+  el.classList.add('sel');
+  selDoc = name;
+  selRoom = el.getAttribute('data-room') || doctorRooms[name] || 'TBD';
 
-            card.classList.remove("sel");
+  document.getElementById('sum-doc').textContent = name;
+  document.getElementById('appt-doc').value = name;
 
-        });
-
-    el.classList.add("sel");
-
-    selDoc = name;
-
-    document.getElementById("sum-doc").textContent =
-        name;
-
-    document.getElementById("appt-doc").value =
-        name;
-
-    updateNextButtons();
-
+  updateAppointmentPreview();
+  updateNextButtons();
 }
 
 function filterDoctors(){
-
-    document
-        .querySelectorAll(".doc-card")
-        .forEach(function(card){
-
-            if(card.dataset.department === selDept){
-
-                card.style.display = "flex";
-
-            }
-
-            else{
-
-                card.style.display = "none";
-
-            }
-
-        });
-
+  document.querySelectorAll('.doc-card').forEach(function(card){
+    card.style.display = (card.dataset.department === selDept) ? 'flex' : 'none';
+  });
 }
 
 function selectSlot(el,time){
+  document.querySelectorAll('.slot:not(.tk)').forEach(function(slot){
+    slot.classList.remove('sel');
+  });
 
-    document
-        .querySelectorAll(".slot:not(.tk)")
-        .forEach(function(slot){
+  el.classList.add('sel');
+  selTime = time;
 
-            slot.classList.remove("sel");
+  document.getElementById('sum-time').textContent = time;
 
-        });
-
-    el.classList.add("sel");
-
-    selTime = time;
-
-    document.getElementById("sum-time").textContent =
-        time;
-
-    updateNextButtons();
-
+  updateAppointmentPreview();
+  updateNextButtons();
 }
 
 function updateSummary(){
+  var d = document.getElementById('appt-date').value;
 
-    var d =
-        document.getElementById("appt-date").value;
+  if(d){
+    document.getElementById('sum-date').textContent = formatDate(d);
+  }
 
-    if(d){
-
-        document.getElementById("sum-date").textContent =
-            formatDate(d);
-
-    }
-
-    updateNextButtons();
-
+  updateAppointmentPreview();
+  updateNextButtons();
 }
 
 function formatDate(d){
@@ -382,6 +499,16 @@ function formatDate(d){
   return dt.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 }
 function confirmAppt(){
+  const validation = validateAppointmentSelection();
+  if(!validation.valid){
+    showToast('warning','Unable to confirm',validation.message);
+    return;
+  }
+
+  const appointment = buildAppointmentPayload();
+  upcomingAppointments.push(appointment);
+  renderUpcomingAppointments();
+
   showToast('success','Appointment confirmed!','Your appointment has been booked. Check your SMS for confirmation.');
   setTimeout(()=>{
     showSMS('Your appointment on '+(document.getElementById('cf-date').textContent)+' at '+selTime+' with '+selDoc+' is confirmed. — CarePath PHPMS');
